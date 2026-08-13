@@ -3,7 +3,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Supabase renamed the browser-safe key from "anon" to "publishable"; both are
+// accepted here so a copy-paste from either era of their dashboard just works.
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const isConfigured = Boolean(url && anonKey);
 

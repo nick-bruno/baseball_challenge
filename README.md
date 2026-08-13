@@ -16,13 +16,32 @@ backend, no websocket server, free tier all the way down.
 
 Create a project at [supabase.com](https://supabase.com), then:
 
-1. **Auth → Providers → Anonymous Sign-ins → Enable.** This is off by default
-   and the app cannot work without it — it's what gives each phone a durable
-   identity from nothing but a typed name.
+1. **Authentication → Sign In / Providers**, and turn on **both** of these:
+   - **Anonymous Sign-Ins** — gives each phone a durable identity from nothing
+     but a typed name.
+   - **User Signups → "Allow new users to sign up"** — a separate, project-wide
+     switch. Anonymous sign-in creates a user, so if signups are disabled
+     globally you get `signup_disabled` / "Signups not allowed for this
+     instance" even with anonymous sign-ins explicitly enabled. Nothing in the
+     anonymous toggle hints at this.
+
+   To check both at once from a terminal:
+
+   ```bash
+   curl -s "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/settings" \
+     -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" | jq '{
+       anonymous: .external.anonymous_users, signups_disabled: .disable_signup }'
+   ```
+
+   You want `anonymous: true` and `signups_disabled: false`.
 2. **SQL Editor →** paste and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
    It creates the tables, row-level security, the write RPCs, and adds all three
    tables to the realtime publication. It's safe to re-run.
-3. **Settings → API →** copy the project URL and the `anon` public key.
+3. **Project Settings → API Keys →** copy the project URL and the **publishable**
+   key (`sb_publishable_…`); older projects show an `anon` JWT instead and both
+   work. Never use the `secret` / `service_role` key here. The URL must be the
+   bare host (`https://xxxx.supabase.co`) — not the REST endpoint with
+   `/rest/v1/` on the end, which `supabase-js` appends itself.
 
 ### 2. Local
 
@@ -35,8 +54,11 @@ npm run dev                  # http://localhost:3000
 ### 3. Deploy
 
 Push to GitHub, import the repo in [Vercel](https://vercel.com), and set the two
-`NEXT_PUBLIC_*` env vars from `.env.local`. Then add your Vercel domain under
-**Supabase → Auth → URL Configuration → Redirect URLs**.
+`NEXT_PUBLIC_*` env vars from `.env.local`. That's the whole deploy.
+
+No Supabase URL configuration is needed. Anonymous sign-in issues a session
+directly over the API with no redirect, so the **Site URL** and **Redirect URLs**
+settings don't apply here — those matter only for OAuth and magic links.
 
 Send people `https://your-app.vercel.app/room/ABC123` — or let them scan the QR
 code the room page generates.
