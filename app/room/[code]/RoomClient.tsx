@@ -93,7 +93,7 @@ export function RoomClient({ code }: { code: string }) {
   const iAmDone = ITEMS.every((item) => myTally[item] >= TARGET);
 
   return (
-    <main className="mx-auto w-full max-w-md px-4 pt-4 pb-28">
+    <main className="mx-auto w-full max-w-md px-4 pt-4 pb-28 lg:max-w-6xl lg:pt-6">
       {/* ---- header ---- */}
       <header className="rise mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -147,6 +147,14 @@ export function RoomClient({ code }: { code: string }) {
         </div>
       )}
 
+      {/*
+        One column on phones — where most people actually play. At lg the
+        tracker stays left and the scoreboard takes the right half, for whoever
+        has a laptop propped up in the section.
+      */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        {/* ---- left: your controls ---- */}
+        <div className="lg:sticky lg:top-6">
       <div className="rise mb-3" style={{ animationDelay: "60ms" }}>
         <InningBar
           inning={roomRow.current_inning}
@@ -182,6 +190,10 @@ export function RoomClient({ code }: { code: string }) {
         </div>
       )}
 
+        </div>
+
+        {/* ---- right: the scoreboard everyone watches ---- */}
+        <div className="lg:mb-0">
       <div className="rise mb-3" style={{ animationDelay: "180ms" }}>
         <Leaderboard
           rows={leaderboard}
@@ -238,6 +250,8 @@ export function RoomClient({ code }: { code: string }) {
           )}
         </div>
       )}
+        </div>
+      </div>
 
       {/* ---- transient errors ---- */}
       {actionError && (
