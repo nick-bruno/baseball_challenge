@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { CounterCard } from "@/components/CounterCard";
 import { FinishCelebration } from "@/components/FinishCelebration";
+import { Finishers } from "@/components/Finishers";
 import { GameScore } from "@/components/GameScore";
 import { InningBar } from "@/components/InningBar";
 import { JoinGate } from "@/components/JoinGate";
 import { Leaderboard } from "@/components/Leaderboard";
 import { ShareRow } from "@/components/ShareRow";
 import { StatusScreen } from "@/components/StatusScreen";
-import { buildFeed, buildLeaderboard, paceFor } from "@/lib/scoring";
+import { buildFeed, buildFinishers, buildLeaderboard, paceFor } from "@/lib/scoring";
 import { ITEMS, TARGET } from "@/lib/types";
 import { useGameSync } from "@/lib/useGameSync";
 import { useRoom } from "@/lib/useRoom";
@@ -52,6 +53,7 @@ export function RoomClient({ code }: { code: string }) {
     [participants, events],
   );
   const feed = useMemo(() => buildFeed(participants, events), [participants, events]);
+  const finishers = useMemo(() => buildFinishers(leaderboard), [leaderboard]);
 
   // ---- finish celebrations ----
   const [celebrations, setCelebrations] = useState<
@@ -60,12 +62,18 @@ export function RoomClient({ code }: { code: string }) {
   const seenDone = useRef<Set<string> | null>(null);
 
   useEffect(() => {
+    // Wait for the initial fetch. Adopting before the data arrives captures an
+    // empty set, which makes every already-finished player look like a fresh
+    // finish and replays the fireworks on every page load.
+    if (status !== "ready") return;
+
     const doneNow = new Set(
       leaderboard.filter((r) => r.done).map((r) => r.participant.id),
     );
 
-    // First pass adopts whatever is already true, so opening the page midway
-    // through doesn't replay fireworks for people who finished an hour ago.
+    // First loaded pass adopts whatever is already true, so opening the page
+    // midway through doesn't replay fireworks for people who finished an hour
+    // ago.
     if (seenDone.current === null) {
       seenDone.current = doneNow;
       return;
@@ -88,7 +96,7 @@ export function RoomClient({ code }: { code: string }) {
         })),
       ]);
     }
-  }, [leaderboard, me?.id]);
+  }, [leaderboard, me?.id, status]);
 
   const dismissCelebration = useCallback(
     () => setCelebrations((prev) => prev.slice(1)),
@@ -262,6 +270,16 @@ export function RoomClient({ code }: { code: string }) {
           hostId={roomRow.host_participant_id}
         />
       </div>
+
+      {finishers.length > 0 && (
+        <div className="rise mb-3" style={{ animationDelay: "210ms" }}>
+          <Finishers
+            rows={finishers}
+            meId={me.id}
+            startedAt={roomRow.created_at}
+          />
+        </div>
+      )}
 
       <div className="rise mb-3" style={{ animationDelay: "240ms" }}>
         <ActivityFeed entries={feed} />

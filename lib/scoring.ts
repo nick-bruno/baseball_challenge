@@ -205,10 +205,29 @@ export function inningLabel(inning: number): string {
   return ORDINALS[inning] ?? `${inning}th`;
 }
 
+/**
+ * Everyone who went 9 and 9, in the order they got there — which is the order
+ * that settles arguments, unlike the leaderboard's total-first ranking.
+ */
+export function buildFinishers(rows: LeaderboardRow[]): LeaderboardRow[] {
+  return rows
+    .filter((r) => r.done && r.finishedAt)
+    .sort((a, b) => a.finishedAt!.localeCompare(b.finishedAt!));
+}
+
 export function formatClock(iso: string): string {
   return new Date(iso).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+/** Seconds included — two people finishing in the same minute is plausible. */
+export function formatClockPrecise(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
   });
 }
 
