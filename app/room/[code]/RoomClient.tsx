@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { CounterCard } from "@/components/CounterCard";
+import { FinishCelebration } from "@/components/FinishCelebration";
 import { GameScore } from "@/components/GameScore";
 import { InningBar } from "@/components/InningBar";
 import { JoinGate } from "@/components/JoinGate";
@@ -51,6 +52,48 @@ export function RoomClient({ code }: { code: string }) {
     [participants, events],
   );
   const feed = useMemo(() => buildFeed(participants, events), [participants, events]);
+
+  // ---- finish celebrations ----
+  const [celebrations, setCelebrations] = useState<
+    { id: string; name: string; isMe: boolean }[]
+  >([]);
+  const seenDone = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    const doneNow = new Set(
+      leaderboard.filter((r) => r.done).map((r) => r.participant.id),
+    );
+
+    // First pass adopts whatever is already true, so opening the page midway
+    // through doesn't replay fireworks for people who finished an hour ago.
+    if (seenDone.current === null) {
+      seenDone.current = doneNow;
+      return;
+    }
+
+    const fresh = leaderboard.filter(
+      (r) => r.done && !seenDone.current!.has(r.participant.id),
+    );
+    // Reassigning (rather than adding) means an undo below 18 forgets them, so
+    // finishing again celebrates again.
+    seenDone.current = doneNow;
+
+    if (fresh.length > 0) {
+      setCelebrations((prev) => [
+        ...prev,
+        ...fresh.map((r) => ({
+          id: r.participant.id,
+          name: r.participant.display_name,
+          isMe: r.participant.id === me?.id,
+        })),
+      ]);
+    }
+  }, [leaderboard, me?.id]);
+
+  const dismissCelebration = useCallback(
+    () => setCelebrations((prev) => prev.slice(1)),
+    [],
+  );
 
   // Auto-dismiss the error toast; these are almost always transient.
   useEffect(() => {
@@ -198,9 +241,9 @@ export function RoomClient({ code }: { code: string }) {
       </div>
 
       {iAmDone && !finished && (
-        <div className="rise mb-3 rounded-xl border border-grass/45 bg-grass/10 px-4 py-3 text-center">
-          <p className="font-display text-sm text-grass painted">
-            9 and 9. You did the whole thing.
+        <div className="rise mb-3 rounded-xl border border-beer/50 bg-beer/10 px-4 py-3 text-center">
+          <p className="font-display text-sm text-beer painted">
+            🏆 9 and 9. You did the whole thing.
           </p>
           <p className="mt-1 font-score text-[0.72rem] text-cream-dim">
             Get some water and enjoy the rest of the game.
@@ -270,6 +313,16 @@ export function RoomClient({ code }: { code: string }) {
       )}
         </div>
       </div>
+
+      {/* Fires on every screen in the room, not just the finisher's. */}
+      {celebrations[0] && (
+        <FinishCelebration
+          key={celebrations[0].id}
+          name={celebrations[0].name}
+          isMe={celebrations[0].isMe}
+          onDismiss={dismissCelebration}
+        />
+      )}
 
       {/* MLB being unreachable is not an error worth a red toast — the manual
           arrows still work, so say so quietly and move on. */}
