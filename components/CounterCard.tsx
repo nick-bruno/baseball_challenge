@@ -119,22 +119,44 @@ export function CounterCard({
           </span>
         </span>
 
-        <span className="relative mt-2 flex items-baseline justify-end gap-1 pr-0.5">
-          <span
-            key={count}
-            className={`flip tabular font-score text-[4.75rem] font-semibold leading-[0.78] painted ${
-              complete ? "text-field-deep" : "text-chalk"
-            }`}
-            style={!complete && count > 0 ? { color: accent } : undefined}
-          >
-            {count}
-          </span>
-          <span
-            className={`font-score text-2xl font-light leading-none ${
-              complete ? "text-field-deep/60" : "text-cream-dim"
-            }`}
-          >
-            /{TARGET}
+        <span className="relative mt-2 flex items-end justify-between gap-3">
+          {/*
+            A span, not a button — the entire card is already the +1 target, and
+            nesting a button inside a button is invalid HTML. This is the visual
+            affordance that makes the tap target discoverable; clicking it just
+            hits the card underneath.
+          */}
+          {!complete && !disabled && (
+            <span
+              aria-hidden
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 pb-1 font-score text-4xl leading-none"
+              style={{
+                borderColor: accent,
+                color: accent,
+                background: `color-mix(in srgb, ${accent} 16%, transparent)`,
+              }}
+            >
+              +
+            </span>
+          )}
+
+          <span className="ml-auto flex items-baseline gap-1 pr-0.5">
+            <span
+              key={count}
+              className={`flip tabular font-score text-[4.75rem] font-semibold leading-[0.78] painted ${
+                complete ? "text-field-deep" : "text-chalk"
+              }`}
+              style={!complete && count > 0 ? { color: accent } : undefined}
+            >
+              {count}
+            </span>
+            <span
+              className={`font-score text-2xl font-light leading-none ${
+                complete ? "text-field-deep/60" : "text-cream-dim"
+              }`}
+            >
+              /{TARGET}
+            </span>
           </span>
         </span>
 
