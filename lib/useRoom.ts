@@ -289,6 +289,22 @@ export function useRoom(code: string) {
     [roomCode],
   );
 
+  const setAutoInning = useCallback(
+    async (enabled: boolean) => {
+      setActionError(null);
+      const { data, error } = await supabase.rpc("set_auto_inning", {
+        p_code: roomCode,
+        p_enabled: enabled,
+      });
+      if (error) {
+        setActionError(error.message);
+        return;
+      }
+      setRoom(data as Room);
+    },
+    [roomCode],
+  );
+
   const finish = useCallback(async () => {
     setActionError(null);
     const { data, error } = await supabase.rpc("finish_room", { p_code: roomCode });
@@ -315,6 +331,7 @@ export function useRoom(code: string) {
     join,
     log,
     setInning,
+    setAutoInning,
     finish,
   };
 }

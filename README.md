@@ -34,9 +34,10 @@ Create a project at [supabase.com](https://supabase.com), then:
    ```
 
    You want `anonymous: true` and `signups_disabled: false`.
-2. **SQL Editor →** paste and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
-   It creates the tables, row-level security, the write RPCs, and adds all three
-   tables to the realtime publication. It's safe to re-run.
+2. **SQL Editor →** run every file in [`supabase/migrations/`](supabase/migrations)
+   in filename order. `0001_init.sql` creates the tables, row-level security,
+   the write RPCs, and the realtime publication; `0002_mlb_sync.sql` adds the
+   live MLB game columns and sync functions. All of them are safe to re-run.
 3. **Project Settings → API Keys →** copy the project URL and the **publishable**
    key (`sb_publishable_…`); older projects show an `anon` JWT instead and both
    work. Never use the `secret` / `service_role` key here. The URL must be the
@@ -89,6 +90,15 @@ returns gets retried safely instead of double-counting.
 socket was down, so [`lib/useRoom.ts`](lib/useRoom.ts) refetches the room on
 every `SUBSCRIBED`, on `visibilitychange`, and on `online`. Without this,
 pocketing your phone for two innings leaves you silently stale.
+
+**The inning follows the real game.** The host's browser polls MLB's public
+Stats API (no key, CORS-open, so no proxy is needed) every 30s and writes the
+inning and score to the room row; Realtime carries it to everyone, so no other
+phone makes an external request. Extra innings clamp to 9, since the challenge
+is defined over nine. Tapping the manual arrows sets `auto_inning = false` and
+hands control to the host — MLB being unreachable or the host's phone locking
+degrades to manual rather than breaking. Team is hardcoded to the Nationals
+(`NATIONALS_TEAM_ID` in [`lib/mlb.ts`](lib/mlb.ts)).
 
 **Security model is "unguessable link".** Any authenticated session can read any
 room it knows the code for — that's what makes the shared leaderboard work.

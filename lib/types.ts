@@ -24,6 +24,17 @@ export type Room = {
   host_participant_id: string | null;
   created_at: string;
   finished_at: string | null;
+  /** When true the challenge inning follows the live MLB game. */
+  auto_inning: boolean;
+  mlb_game_pk: number | null;
+  mlb_status: string | null;
+  mlb_inning: number | null;
+  mlb_inning_state: string | null;
+  mlb_away_team: string | null;
+  mlb_home_team: string | null;
+  mlb_away_score: number | null;
+  mlb_home_score: number | null;
+  mlb_updated_at: string | null;
 };
 
 export type Participant = {

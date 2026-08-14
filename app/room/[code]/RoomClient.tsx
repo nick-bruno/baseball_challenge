@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { CounterCard } from "@/components/CounterCard";
+import { GameScore } from "@/components/GameScore";
 import { InningBar } from "@/components/InningBar";
 import { JoinGate } from "@/components/JoinGate";
 import { Leaderboard } from "@/components/Leaderboard";
@@ -12,6 +13,7 @@ import { ShareRow } from "@/components/ShareRow";
 import { StatusScreen } from "@/components/StatusScreen";
 import { buildFeed, buildLeaderboard, paceFor } from "@/lib/scoring";
 import { ITEMS, TARGET } from "@/lib/types";
+import { useGameSync } from "@/lib/useGameSync";
 import { useRoom } from "@/lib/useRoom";
 
 export function RoomClient({ code }: { code: string }) {
@@ -32,10 +34,17 @@ export function RoomClient({ code }: { code: string }) {
     join,
     log,
     setInning,
+    setAutoInning,
     finish,
   } = room;
 
   const [confirmEnd, setConfirmEnd] = useState(false);
+
+  // Only the host polls MLB; everyone else receives the result over Realtime.
+  const { error: gameSyncError } = useGameSync({
+    code,
+    active: isHost && roomRow?.status === "active",
+  });
 
   const leaderboard = useMemo(
     () => buildLeaderboard(participants, events),
@@ -155,12 +164,21 @@ export function RoomClient({ code }: { code: string }) {
       <div className="lg:grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:items-start lg:gap-6">
         {/* ---- left: your controls ---- */}
         <div className="lg:sticky lg:top-6">
+      {roomRow.mlb_game_pk && (
+        <div className="rise mb-3" style={{ animationDelay: "40ms" }}>
+          <GameScore room={roomRow} />
+        </div>
+      )}
+
       <div className="rise mb-3" style={{ animationDelay: "60ms" }}>
         <InningBar
           inning={roomRow.current_inning}
           isHost={isHost}
           finished={finished}
+          auto={roomRow.auto_inning}
+          followingGame={!!roomRow.mlb_game_pk}
           onChange={setInning}
+          onResumeAuto={() => setAutoInning(true)}
         />
       </div>
 
@@ -252,6 +270,14 @@ export function RoomClient({ code }: { code: string }) {
       )}
         </div>
       </div>
+
+      {/* MLB being unreachable is not an error worth a red toast — the manual
+          arrows still work, so say so quietly and move on. */}
+      {gameSyncError && isHost && !finished && (
+        <p className="mt-3 text-center font-score text-[0.7rem] text-cream-dim">
+          {gameSyncError}
+        </p>
+      )}
 
       {/* ---- transient errors ---- */}
       {actionError && (

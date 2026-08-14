@@ -6,11 +6,26 @@ type Props = {
   inning: number;
   isHost: boolean;
   finished: boolean;
+  /** True while the inning is following the live MLB feed. */
+  auto: boolean;
+  followingGame: boolean;
   onChange: (inning: number) => void;
+  onResumeAuto: () => void;
 };
 
-/** The scoreboard's inning strip. Only the host moves the game along. */
-export function InningBar({ inning, isHost, finished, onChange }: Props) {
+/**
+ * The scoreboard's inning strip. It follows the live game when a room is
+ * synced; the host's arrows are always available and take over on first tap.
+ */
+export function InningBar({
+  inning,
+  isHost,
+  finished,
+  auto,
+  followingGame,
+  onChange,
+  onResumeAuto,
+}: Props) {
   return (
     <div className="panel rounded-xl px-3 py-2.5">
       <div className="flex items-center gap-3">
@@ -28,8 +43,22 @@ export function InningBar({ inning, isHost, finished, onChange }: Props) {
 
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-baseline justify-between">
-            <span className="font-display text-[0.62rem] uppercase tracking-sign text-cream-dim">
+            <span className="flex items-center gap-1.5 font-display text-[0.62rem] uppercase tracking-sign text-cream-dim">
               {finished ? "Final" : "Inning"}
+              {!finished && followingGame && auto && (
+                <span className="rounded-sm bg-grass/20 px-1 text-[0.5rem] font-bold text-grass">
+                  Auto
+                </span>
+              )}
+              {!finished && followingGame && !auto && isHost && (
+                <button
+                  type="button"
+                  onClick={onResumeAuto}
+                  className="rounded-sm bg-cream/15 px-1 text-[0.5rem] font-bold text-cream-dim transition active:scale-90"
+                >
+                  Manual · Resume auto
+                </button>
+              )}
             </span>
             <span className="tabular font-score text-sm font-semibold text-cream">
               {inning}
