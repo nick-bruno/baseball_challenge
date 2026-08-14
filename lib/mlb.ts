@@ -7,6 +7,14 @@
 
 export const NATIONALS_TEAM_ID = 120;
 
+/**
+ * Which team's game a room follows. Defaults to the Nationals; override with
+ * NEXT_PUBLIC_MLB_TEAM_ID, or per-visit with a `?team=<id>` query param, which
+ * is how you point a test room at whatever game happens to be on right now.
+ */
+export const DEFAULT_TEAM_ID =
+  Number(process.env.NEXT_PUBLIC_MLB_TEAM_ID) || NATIONALS_TEAM_ID;
+
 const BASE = "https://statsapi.mlb.com/api/v1";
 
 export type GameSnapshot = {
@@ -74,7 +82,7 @@ function toSnapshot(g: ScheduleGame): GameSnapshot {
  * cheaper on the host's phone and battery than schedule + linescore.
  */
 export async function fetchTeamGameToday(
-  teamId = NATIONALS_TEAM_ID,
+  teamId = DEFAULT_TEAM_ID,
   signal?: AbortSignal,
 ): Promise<GameSnapshot | null> {
   const url = `${BASE}/schedule?sportId=1&teamId=${teamId}&date=${easternDate()}&hydrate=linescore`;

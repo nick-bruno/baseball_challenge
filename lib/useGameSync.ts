@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
-import { fetchTeamGameToday, NATIONALS_TEAM_ID, type GameSnapshot } from "./mlb";
+import { DEFAULT_TEAM_ID, fetchTeamGameToday, type GameSnapshot } from "./mlb";
 
 const POLL_MS = 30_000;
 
@@ -14,7 +14,7 @@ const POLL_MS = 30_000;
 export function useGameSync({
   code,
   active,
-  teamId = NATIONALS_TEAM_ID,
+  teamId = DEFAULT_TEAM_ID,
 }: {
   code: string;
   active: boolean;
@@ -30,6 +30,13 @@ export function useGameSync({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const controller = new AbortController();
+
+    // Read inside the effect so it stays client-only — no hydration mismatch
+    // and no Suspense boundary needed for useSearchParams.
+    const override = Number(
+      new URLSearchParams(window.location.search).get("team"),
+    );
+    const followTeam = Number.isFinite(override) && override > 0 ? override : teamId;
 
     const write = async (snap: GameSnapshot) => {
       const fingerprint = JSON.stringify([
@@ -62,7 +69,7 @@ export function useGameSync({
       // visibilitychange handler catches us up the moment they look again.
       if (document.visibilityState === "visible") {
         try {
-          const snap = await fetchTeamGameToday(teamId, controller.signal);
+          const snap = await fetchTeamGameToday(followTeam, controller.signal);
           if (cancelled) return;
           setError(null);
           if (snap) await write(snap);
